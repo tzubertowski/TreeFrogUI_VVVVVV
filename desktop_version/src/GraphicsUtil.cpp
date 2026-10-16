@@ -1,4 +1,5 @@
 #include "Graphics.h"
+#include <cmath>
 
 
 
@@ -277,35 +278,20 @@ void BlitSurfaceColoured(
     SDL_Rect* _destRect,
     colourTransform& ct
 ) {
+#ifdef LIBRETRO
+    SDL_BlitSurfaceTinted(_src, _srcRect, _dest, _destRect, ct.colour & 0x00FFFFFF);
+#else
     SDL_Rect *tempRect = _destRect;
-
     const SDL_PixelFormat& fmt = *(_src->format);
-    // const SDL_PixelFormat& destfmt = *(_dest->format);
-
-    SDL_Surface* tempsurface =  SDL_CreateRGBSurface(
-        SDL_SWSURFACE,
-        _src->w,
-        _src->h,
-        fmt.BitsPerPixel,
-        fmt.Rmask,
-        fmt.Gmask,
-        fmt.Bmask,
-        fmt.Amask
-    );
-
-    for(int x = 0; x < tempsurface->w; x++)
-    {
-        for(int y = 0; y < tempsurface->h; y++)
-        {
-            Uint32 pixel = ReadPixel(_src, x, y);
-            Uint32 Alpha = pixel & fmt.Amask;
-            Uint32 result = ct.colour & 0x00FFFFFF;
-            DrawPixel(tempsurface, x, y, result | Alpha);
-        }
-    }
-
+    SDL_Surface* tempsurface = SDL_CreateRGBSurface(SDL_SWSURFACE, _src->w, _src->h,
+        fmt.BitsPerPixel, fmt.Rmask, fmt.Gmask, fmt.Bmask, fmt.Amask);
+    if (!tempsurface) return;
+    Uint32 colour = ct.colour & 0x00FFFFFF;
+    for (int x = 0; x < tempsurface->w; ++x) for (int y = 0; y < tempsurface->h; ++y)
+        DrawPixel(tempsurface, x, y, colour | (ReadPixel(_src, x, y) & fmt.Amask));
     SDL_BlitSurface(tempsurface, _srcRect, _dest, tempRect);
     SDL_FreeSurface(tempsurface);
+#endif
 }
 
 
@@ -368,8 +354,8 @@ SDL_Surface* ApplyFilter( SDL_Surface* _src )
 				blue =  static_cast<Uint8>(blue / 1.2f);
 			}
 
-			int distX =  static_cast<int>((abs (160.0f -x ) / 160.0f) *16);
-			int distY =  static_cast<int>((abs (120.0f -y ) / 120.0f)*32);
+			int distX =  static_cast<int>((std::abs(160.0f -x ) / 160.0f) *16);
+			int distY =  static_cast<int>((std::abs(120.0f -y ) / 120.0f)*32);
 
 			red = std::max(red - ( distX +distY), 0);
 			green = std::max(green - ( distX +distY), 0);
@@ -430,6 +416,8 @@ bool intersectRect( float left1, float right1, float bottom1, float top1, float 
 
 void OverlaySurfaceKeyed( SDL_Surface* _src, SDL_Surface* _dest, Uint32 _key )
 {
+    if (_src->format->BitsPerPixel < 32)
+        _key &= (Uint32(1) << _src->format->BitsPerPixel) - 1;
     // const SDL_PixelFormat& fmt = *(_src->format);
     for(int x = 0; x < _src->w; x++)
     {

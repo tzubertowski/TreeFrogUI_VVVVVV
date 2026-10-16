@@ -1,4 +1,5 @@
 #include "Logic.h"
+#include <cmath>
 #include "Network.h"
 
 extern int temp;
@@ -960,7 +961,7 @@ void gamelogic(Graphics& dwgfx, Game& game, entityclass& obj,  musicclass& music
                 {
                     if (obj.entities[i].isplatform)
                     {
-                        if(abs(obj.entities[i].vx) < 0.000001f)
+                        if(std::abs(obj.entities[i].vx) < 0.000001f)
                         {
                             obj.removeblockat(obj.entities[i].xp, obj.entities[i].yp);
 
@@ -989,7 +990,7 @@ void gamelogic(Graphics& dwgfx, Game& game, entityclass& obj,  musicclass& music
                 {
                     if (obj.entities[ie].isplatform)
                     {
-                        if(abs(obj.entities[ie].vy) < 0.000001f)
+                        if(std::abs(obj.entities[ie].vy) < 0.000001f)
                         {
                             obj.removeblockat(obj.entities[ie].xp, obj.entities[ie].yp);
 

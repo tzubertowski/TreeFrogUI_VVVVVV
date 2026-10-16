@@ -34,69 +34,31 @@ scriptclass script;
 
  editorclass ed;
 
-int main(int argc, char *argv[])
-{
-    FILESYSTEM_init(argv[0]);
-    SDL_Init(
-        SDL_INIT_VIDEO |
-        SDL_INIT_AUDIO |
-        SDL_INIT_JOYSTICK |
-        SDL_INIT_GAMECONTROLLER
-    );
-
-    if (argc > 2 && strcmp(argv[1], "-renderer") == 0)
-    {
-        SDL_SetHintWithPriority(SDL_HINT_RENDER_DRIVER, argv[2], SDL_HINT_OVERRIDE);
-    }
-
-    NETWORK_init();
-
+class GameRuntime {
+public:
     Screen gameScreen;
-
-	printf("\t\t\n");
-	printf("\t\t\n");
-	printf("\t\t       VVVVVV\n");
-	printf("\t\t\n");
-	printf("\t\t\n");
-	printf("\t\t  8888888888888888  \n");
-	printf("\t\t88888888888888888888\n");
-	printf("\t\t888888    8888    88\n");
-	printf("\t\t888888    8888    88\n");
-	printf("\t\t88888888888888888888\n");
-	printf("\t\t88888888888888888888\n");
-	printf("\t\t888888            88\n");
-	printf("\t\t88888888        8888\n");
-	printf("\t\t  8888888888888888  \n");
-	printf("\t\t      88888888      \n");
-	printf("\t\t  8888888888888888  \n");
-	printf("\t\t88888888888888888888\n");
-	printf("\t\t88888888888888888888\n");
-	printf("\t\t88888888888888888888\n");
-	printf("\t\t8888  88888888  8888\n");
-	printf("\t\t8888  88888888  8888\n");
-	printf("\t\t    888888888888    \n");
-	printf("\t\t    8888    8888    \n");
-	printf("\t\t  888888    888888  \n");
-	printf("\t\t  888888    888888  \n");
-	printf("\t\t  888888    888888  \n");
-	printf("\t\t\n");
-	printf("\t\t\n");
-
-    //Set up screen
-
-
-
-
     UtilityClass help;
+    Graphics graphics;
+    musicclass music;
+    Game game;
+    KeyPoll key;
+    mapclass map;
+    entityclass obj;
+    GameRuntime() {
+
+
+
+
+
     // Load Ini
 
 
-    Graphics graphics;
 
 
 
-    musicclass music;
-    Game game;
+
+
+
     game.infocus = true;
 
     graphics.MakeTileArray();
@@ -120,7 +82,7 @@ int main(int argc, char *argv[])
     graphics.images.push_back(graphics.grphx.im_image12);
 
     const SDL_PixelFormat* fmt = gameScreen.GetFormat();
-    graphics.backBuffer = SDL_CreateRGBSurface(SDL_SWSURFACE ,320 ,240 ,32,fmt->Rmask,fmt->Gmask,fmt->Bmask,fmt->Amask ) ;
+    graphics.backBuffer = SDL_CreateRGBSurface(SDL_SWSURFACE ,320 ,240 ,fmt->BitsPerPixel,fmt->Rmask,fmt->Gmask,fmt->Bmask,fmt->Amask ) ;
     SDL_SetSurfaceBlendMode(graphics.backBuffer, SDL_BLENDMODE_NONE);
     graphics.Makebfont();
 
@@ -152,8 +114,8 @@ int main(int argc, char *argv[])
     game.menustart = false;
     game.mainmenu = 0;
 
-    KeyPoll key;
-    mapclass map;
+
+
 
     map.ypos = (700-29) * 8;
     map.bypos = map.ypos / 2;
@@ -208,7 +170,7 @@ int main(int argc, char *argv[])
 		if(game.bestrank[4]>=3) NETWORK_unlockAchievement("vvvvvvtimetrial_warp_fixed");
 		if(game.bestrank[5]>=3) NETWORK_unlockAchievement("vvvvvvtimetrial_final_fixed");
 
-    entityclass obj;
+
     obj.init();
 
     //Quick hack to start in final level ---- //Might be useful to leave this commented in for testing
@@ -234,45 +196,11 @@ int main(int argc, char *argv[])
 		*/
     //End hack here ----
 
-    volatile Uint32 time, timePrev = 0;
-    game.infocus = true;
-    key.isActive = true;
-
-    while(!key.quitProgram)
-    {
-		//gameScreen.ClearScreen(0x00);
-
-        time = SDL_GetTicks();
-
-        // Update network per frame.
+    }
+    void frame() {
         NETWORK_update();
-
-        //framerate limit to 30
-        Uint32 timetaken = time - timePrev;
-        if(game.gamestate==EDITORMODE)
-		{
-          if (timetaken < 24)
-          {
-              volatile Uint32 delay = 24 - timetaken;
-              SDL_Delay( delay );
-              time = SDL_GetTicks();
-          }
-          timePrev = time;
-
-        }else{
-          if (timetaken < game.gameframerate)
-          {
-              volatile Uint32 delay = game.gameframerate - timetaken;
-              SDL_Delay( delay );
-              time = SDL_GetTicks();
-          }
-          timePrev = time;
-
-        }
-
-
-
         key.Poll();
+#ifndef LIBRETRO
 		if(key.toggleFullscreen)
 		{
 			if(!gameScreen.isWindowed)
@@ -312,6 +240,7 @@ int main(int argc, char *argv[])
 			music.playef(2);
 		}*/
 
+#endif
         game.infocus = key.isActive;
         if(!game.infocus)
         {
@@ -509,12 +438,14 @@ int main(int argc, char *argv[])
             Mix_Volume(-1,MIX_MAX_VOLUME);
         }
 
+#ifndef LIBRETRO
 		if(key.resetWindow)
 		{
 			key.resetWindow = false;
 			gameScreen.ResizeScreen(-1, -1);
 		}
 
+#endif
         music.processmusic();
         graphics.processfade();
         game.gameclock();
@@ -522,18 +453,37 @@ int main(int argc, char *argv[])
 
         //SDL_FillRect( SDL_GetVideoSurface(), NULL, 0 );
     }
+};
 
-
-	  //SDL_Delay(300);
-
-    //TODO
-    //Free the loaded image
-    //SDL_FreeSurface( gameScreen );
-
-    //Quit SDL
+#ifdef LIBRETRO
+static GameRuntime *runtime;
+extern "C" void vvv_game_start() {
+    script = scriptclass();
+    ed = editorclass();
+    runtime = new GameRuntime;
+}
+extern "C" void vvv_game_frame() { if (runtime) runtime->frame(); }
+extern "C" void vvv_game_stop() { delete runtime; runtime = NULL; }
+#else
+int main(int argc, char *argv[])
+{
+    FILESYSTEM_init(argv[0]);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER);
+    if (argc > 2 && strcmp(argv[1], "-renderer") == 0)
+        SDL_SetHintWithPriority(SDL_HINT_RENDER_DRIVER, argv[2], SDL_HINT_OVERRIDE);
+    NETWORK_init();
+    GameRuntime runtime;
+    Uint32 previous = 0;
+    while (!runtime.key.quitProgram) {
+        Uint32 now = SDL_GetTicks();
+        Uint32 interval = runtime.game.gamestate == EDITORMODE ? 24 : runtime.game.gameframerate;
+        if (now - previous < interval) SDL_Delay(interval - (now - previous));
+        previous = SDL_GetTicks();
+        runtime.frame();
+    }
     NETWORK_shutdown();
     SDL_Quit();
     FILESYSTEM_deinit();
-
     return 0;
 }
+#endif

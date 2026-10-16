@@ -16,6 +16,7 @@ class binaryBlob
 {
 public:
 	binaryBlob();
+	~binaryBlob();
 
 #ifdef VVV_COMPILEMUSIC
 	void AddFileToBinaryBlob(const char* _path);

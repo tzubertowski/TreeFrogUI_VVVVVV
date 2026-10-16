@@ -109,7 +109,20 @@ Graphics::Graphics()
 
 Graphics::~Graphics()
 {
-
+	for (SDL_Surface *surface : tele) SDL_FreeSurface(surface);
+	for (SDL_Surface *surface : tiles) SDL_FreeSurface(surface);
+	for (SDL_Surface *surface : tiles2) SDL_FreeSurface(surface);
+	for (SDL_Surface *surface : tiles3) SDL_FreeSurface(surface);
+	for (SDL_Surface *surface : entcolours) SDL_FreeSurface(surface);
+	for (SDL_Surface *surface : sprites) SDL_FreeSurface(surface);
+	for (SDL_Surface *surface : flipsprites) SDL_FreeSurface(surface);
+	for (SDL_Surface *surface : bfont) SDL_FreeSurface(surface);
+	for (SDL_Surface *surface : flipbfont) SDL_FreeSurface(surface);
+	SDL_FreeSurface(backBuffer);
+	SDL_FreeSurface(forgroundBuffer);
+	SDL_FreeSurface(menubuffer);
+	SDL_FreeSurface(towerbuffer);
+	SDL_FreeSurface(tempBuffer);
 }
 
 void Graphics::drawspritesetcol(int x, int y, int t, int c, UtilityClass& help)

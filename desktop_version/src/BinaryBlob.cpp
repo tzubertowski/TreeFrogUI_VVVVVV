@@ -12,6 +12,7 @@ binaryBlob::binaryBlob()
 	numberofHeaders = 0;
 	for (int i = 0; i < 128; i += 1)
 	{
+		m_memblocks[i] = NULL;
 		m_headers[i].valid = false;
 
 		for (int j = 0; j < 48; j += 1)
@@ -19,6 +20,12 @@ binaryBlob::binaryBlob()
 			m_headers[i].name[j] = '\0';
 		}
 	}
+}
+
+binaryBlob::~binaryBlob()
+{
+	for (int i = 0; i < 128; i += 1)
+		free(m_memblocks[i]);
 }
 
 #ifdef VVV_COMPILEMUSIC
@@ -81,6 +88,7 @@ void binaryBlob::writeBinaryBlob(const char* _name)
 bool binaryBlob::unPackBinary(const char* name)
 {
 	PHYSFS_sint64 size;
+	for (int i = 0; i < 128; ++i) { free(m_memblocks[i]); m_memblocks[i] = NULL; }
 
 	PHYSFS_File *handle = PHYSFS_openRead(name);
 	if (handle == NULL)
@@ -91,7 +99,12 @@ bool binaryBlob::unPackBinary(const char* name)
 
 	size = PHYSFS_fileLength(handle);
 
-	PHYSFS_read(handle, &m_headers, 1, sizeof(resourceheader) * 128);
+	if (size < (PHYSFS_sint64)sizeof(m_headers) || size > 64 * 1024 * 1024 ||
+		PHYSFS_read(handle, &m_headers, 1, sizeof(m_headers)) != sizeof(m_headers))
+	{
+		PHYSFS_close(handle);
+		return false;
+	}
 
 	int offset = 0 + (sizeof(resourceheader) * 128);
 
@@ -99,9 +112,19 @@ bool binaryBlob::unPackBinary(const char* name)
 	{
 		if (m_headers[i].valid)
 		{
+			if (memchr(m_headers[i].name, 0, sizeof(m_headers[i].name)) == NULL ||
+				m_headers[i].size < 0 || m_headers[i].size > size - offset)
+			{
+				PHYSFS_close(handle);
+				return false;
+			}
 			PHYSFS_seek(handle, offset);
 			m_memblocks[i] = (char*) malloc(m_headers[i].size);
-			PHYSFS_read(handle, m_memblocks[i], 1, m_headers[i].size);
+			if (m_memblocks[i] == NULL || PHYSFS_read(handle, m_memblocks[i], 1, m_headers[i].size) != m_headers[i].size)
+			{
+				PHYSFS_close(handle);
+				return false;
+			}
 			offset += m_headers[i].size;
 		}
 	}
@@ -126,7 +149,7 @@ int binaryBlob::getIndex(const char* _name)
 {
 	for (int i = 0; i < 128; i += 1)
 	{
-		if (strcmp(_name, m_headers[i].name) == 0)
+		if (m_headers[i].valid && strcmp(_name, m_headers[i].name) == 0)
 		{
 			return i;
 		}
@@ -136,10 +159,10 @@ int binaryBlob::getIndex(const char* _name)
 
 int binaryBlob::getSize(int _index)
 {
-	return m_headers[_index].size;
+	return _index >= 0 && _index < 128 ? m_headers[_index].size : 0;
 }
 
 char* binaryBlob::getAddress(int _index)
 {
-	return m_memblocks[_index];
+	return _index >= 0 && _index < 128 ? m_memblocks[_index] : NULL;
 }

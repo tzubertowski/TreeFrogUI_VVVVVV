@@ -20,6 +20,7 @@ extern "C"
 		const unsigned char* in,
 		size_t insize
 	);
+	extern const char *lodepng_error_text(unsigned code);
 }
 
 SDL_Surface* LoadImage(const char *filename, bool noBlend = true, bool noAlpha = false)
@@ -29,19 +30,38 @@ SDL_Surface* LoadImage(const char *filename, bool noBlend = true, bool noAlpha =
 	//The optimized image that will be used
 	SDL_Surface* optimizedImage = NULL;
 
-	unsigned char *data;
-	unsigned int width, height;
+	unsigned char *data = NULL;
+	unsigned int width = 0, height = 0;
 
 	unsigned char *fileIn = NULL;
 	size_t length = 0;
 	FILESYSTEM_loadFileToMemory(filename, &fileIn, &length);
+	if (!fileIn)
+	{
+		fprintf(stderr, "Could not load image: %s\n", filename);
+		return NULL;
+	}
 	if (noAlpha)
 	{
-		lodepng_decode24(&data, &width, &height, fileIn, length);
+		unsigned error = lodepng_decode24(&data, &width, &height, fileIn, length);
+		if (error)
+		{
+			fprintf(stderr, "Could not decode image %s: %s\n", filename, lodepng_error_text(error));
+			free(data);
+			free(fileIn);
+			return NULL;
+		}
 	}
 	else
 	{
-		lodepng_decode32(&data, &width, &height, fileIn, length);
+		unsigned error = lodepng_decode32(&data, &width, &height, fileIn, length);
+		if (error)
+		{
+			fprintf(stderr, "Could not decode image %s: %s\n", filename, lodepng_error_text(error));
+			free(data);
+			free(fileIn);
+			return NULL;
+		}
 	}
 	FILESYSTEM_freeMemory(&fileIn);
 
@@ -110,4 +130,10 @@ GraphicsResources::GraphicsResources(void)
 
 GraphicsResources::~GraphicsResources(void)
 {
+	SDL_Surface *surfaces[] = {im_tiles, im_tiles2, im_tiles3, im_entcolours,
+		im_sprites, im_flipsprites, im_bfont, im_bfontmask, im_teleporter,
+		im_image0, im_image1, im_image2, im_image3, im_image4, im_image5,
+		im_image6, im_image7, im_image8, im_image9, im_image10, im_image11,
+		im_image12};
+	for (SDL_Surface *surface : surfaces) SDL_FreeSurface(surface);
 }

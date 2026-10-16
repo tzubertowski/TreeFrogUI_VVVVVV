@@ -2,6 +2,50 @@
 #include <stdio.h>
 #include "Music.h"
 #include "BinaryBlob.h"
+#ifdef LIBRETRO
+#include <physfs.h>
+#include <cstring>
+#include <utility>
+
+static const char *const songNames[16] = {
+	"data/music/0levelcomplete.ogg", "data/music/1pushingonwards.ogg",
+	"data/music/2positiveforce.ogg", "data/music/3potentialforanything.ogg",
+	"data/music/4passionforexploring.ogg", "data/music/5intermission.ogg",
+	"data/music/6presentingvvvvvv.ogg", "data/music/7gamecomplete.ogg",
+	"data/music/8predestinedfate.ogg", "data/music/9positiveforcereversed.ogg",
+	"data/music/10popularpotpourri.ogg", "data/music/11pipedream.ogg",
+	"data/music/12pressurecooker.ogg", "data/music/13pacedenergy.ogg",
+	"data/music/14piercingthesky.ogg", "data/music/predestinedfatefinallevel.ogg"
+};
+
+static Mix_Music *loadPackedSong(const char *pack, const char *song)
+{
+	PHYSFS_File *file = PHYSFS_openRead(pack);
+	if (!file) return NULL;
+	resourceheader headers[128];
+	const PHYSFS_sint64 length = PHYSFS_fileLength(file);
+	PHYSFS_sint64 offset = sizeof headers;
+	Mix_Music *music = NULL;
+	if (length >= offset && PHYSFS_readBytes(file, headers, sizeof headers) == sizeof headers)
+	{
+		for (const resourceheader &header : headers)
+		{
+			if (!header.valid) continue;
+			if (!memchr(header.name, 0, sizeof header.name) || header.size < 0 || header.size > length - offset) break;
+			if (!strcmp(header.name, song))
+			{
+				std::vector<Uint8> bytes(header.size);
+				if (PHYSFS_seek(file, offset) && PHYSFS_readBytes(file, bytes.data(), bytes.size()) == PHYSFS_sint64(bytes.size()))
+					music = vvv_load_music(std::move(bytes));
+				break;
+			}
+			offset += header.size;
+		}
+	}
+	PHYSFS_close(file);
+	return music;
+}
+#endif
 
 musicclass::musicclass()
 {
@@ -56,6 +100,12 @@ musicclass::musicclass()
 	musicWriteBlob.writeBinaryBlob("data/BinaryMusic.vvv");
 #endif
 
+#ifdef LIBRETRO
+	mmmmmm = PHYSFS_exists("mmmmmm.vvv");
+	usingmmmmmm = mmmmmm;
+	currentsong = -1;
+	musicTracks.resize(mmmmmm ? 32 : 16);
+#else
 	binaryBlob musicReadBlob;
 	if (!musicReadBlob.unPackBinary("mmmmmm.vvv"))
 	{
@@ -200,6 +250,8 @@ musicclass::musicclass()
 	rw = SDL_RWFromMem(musicReadBlob.getAddress(index), musicReadBlob.getSize(index));
 	musicTracks.push_back(MusicTrack( rw ));
 
+
+#endif
 	safeToProcessMusic= false;
 	m_doFadeInVol = false;
 	musicVolume = 128;
@@ -208,6 +260,15 @@ musicclass::musicclass()
 	custompd = false;
 	// currentsong = -1;
 	// nicefade = 0;
+}
+
+musicclass::~musicclass()
+{
+	Mix_HaltMusic();
+	for (size_t i = 0; i < musicTracks.size(); ++i)
+		Mix_FreeMusic(musicTracks[i].m_music);
+	for (size_t i = 0; i < soundTracks.size(); ++i)
+		Mix_FreeChunk(soundTracks[i].sound);
 }
 
 void musicclass::play(int t)
@@ -225,6 +286,22 @@ void musicclass::play(int t)
 	Mix_VolumeMusic(128);
 	if (currentsong !=t)
 	{
+#ifdef LIBRETRO
+		// Keep only the active compressed Ogg and decoder within the device's RAM budget.
+		Mix_HaltMusic();
+		for (MusicTrack &track : musicTracks)
+		{
+			Mix_FreeMusic(track.m_music);
+			track.m_music = NULL;
+		}
+		musicTracks[t].m_music = loadPackedSong(t < 16 && mmmmmm ? "mmmmmm.vvv" : "vvvvvvmusic.vvv", songNames[t % 16]);
+		if (!musicTracks[t].m_music)
+		{
+			fprintf(stderr, "Unable to load music track %d\n", t);
+			currentsong = -1;
+			return;
+		}
+#endif
 		if (currentsong != -1)
 		{
 			// Stop the old song first

@@ -6,6 +6,9 @@
 class MusicTrack
 {
 public:
+#ifdef LIBRETRO
+	MusicTrack() : m_music(NULL), m_isValid(false) {}
+#endif
 	MusicTrack(const char* fileName);
 	MusicTrack(SDL_RWops *rw);
 	Mix_Music *m_music;

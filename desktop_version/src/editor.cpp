@@ -63,6 +63,7 @@ editorclass::editorclass()
         vmult.push_back(int(i * 40 * maxwidth));
     }
 
+    numhooks = 0;
     reset();
 }
 

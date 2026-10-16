@@ -11,6 +11,7 @@ class musicclass
 {
 public:
 	musicclass();
+	~musicclass();
 
 	void play(int t);
 	void loopmusic();

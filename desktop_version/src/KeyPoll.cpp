@@ -25,6 +25,34 @@ void KeyPoll::setSensitivity(int _value)
 
 }
 
+#ifdef LIBRETRO
+#include "../../libretro/libretro.h"
+extern "C" unsigned short vvv_input_bits;
+KeyPoll::KeyPoll() : isActive(true), resetWindow(false), quitProgram(false), toggleFullscreen(false),
+    sensitivity(8000), leftbutton(0), rightbutton(0), middlebutton(0), mx(0), my(0),
+    textentrymode(false), pressedbackspace(false), xVel(0), yVel(0), useFullscreenSpaces(false), wasFullscreen(0) {}
+void KeyPoll::enabletextentry() { textentrymode = true; keybuffer.clear(); }
+void KeyPoll::disabletextentry() { textentrymode = false; }
+void KeyPoll::Poll() {
+    unsigned short bits = vvv_input_bits;
+    buttonmap[SDL_CONTROLLER_BUTTON_DPAD_UP] = bits & (1 << RETRO_DEVICE_ID_JOYPAD_UP);
+    buttonmap[SDL_CONTROLLER_BUTTON_DPAD_DOWN] = bits & (1 << RETRO_DEVICE_ID_JOYPAD_DOWN);
+    buttonmap[SDL_CONTROLLER_BUTTON_DPAD_LEFT] = bits & (1 << RETRO_DEVICE_ID_JOYPAD_LEFT);
+    buttonmap[SDL_CONTROLLER_BUTTON_DPAD_RIGHT] = bits & (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT);
+    buttonmap[SDL_CONTROLLER_BUTTON_A] = bits & (1 << RETRO_DEVICE_ID_JOYPAD_A);
+    buttonmap[SDL_CONTROLLER_BUTTON_B] = bits & (1 << RETRO_DEVICE_ID_JOYPAD_B);
+    buttonmap[SDL_CONTROLLER_BUTTON_X] = bits & (1 << RETRO_DEVICE_ID_JOYPAD_X);
+    buttonmap[SDL_CONTROLLER_BUTTON_Y] = bits & (1 << RETRO_DEVICE_ID_JOYPAD_Y);
+    buttonmap[SDL_CONTROLLER_BUTTON_START] = bits & (1 << RETRO_DEVICE_ID_JOYPAD_START);
+    buttonmap[SDL_CONTROLLER_BUTTON_BACK] = bits & (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+    keymap[SDLK_RETURN] = buttonmap[SDL_CONTROLLER_BUTTON_START];
+    keymap[SDLK_SPACE] = buttonmap[SDL_CONTROLLER_BUTTON_A];
+    keymap[SDLK_LEFT] = buttonmap[SDL_CONTROLLER_BUTTON_DPAD_LEFT];
+    keymap[SDLK_RIGHT] = buttonmap[SDL_CONTROLLER_BUTTON_DPAD_RIGHT];
+    keymap[SDLK_UP] = buttonmap[SDL_CONTROLLER_BUTTON_DPAD_UP];
+    keymap[SDLK_DOWN] = buttonmap[SDL_CONTROLLER_BUTTON_DPAD_DOWN];
+}
+#else
 KeyPoll::KeyPoll()
 {
 	xVel = 0;
@@ -272,6 +300,7 @@ void KeyPoll::Poll()
 	}
 }
 
+#endif
 bool KeyPoll::isDown(SDL_Keycode key)
 {
 	return keymap[key];
