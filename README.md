@@ -19,4 +19,12 @@ Authors
 
 Versions
 ------------
+
+## Libretro port
+
+This fork also contains a Libretro core adapted from James O'Farrell's
+[OpenDingux port](https://github.com/jamesofarrell/VVVVVV), for TreeFrogUI's
+SF3000 and R36HD devices. It outputs 320×240 video at 30 FPS. The game data is
+not included; see [the core build and setup guide](libretro/README.md) for build
+commands and required files.
 There are two versions of the VVVVVV source code available - the [desktop version](https://github.com/TerryCavanagh/VVVVVV/tree/master/desktop_version) (based on the C++ port, and currently live on Steam), and the [mobile version](https://github.com/TerryCavanagh/VVVVVV/tree/master/mobile_version) (based on a fork of the original flash source code, and currently live on iOS and Android).

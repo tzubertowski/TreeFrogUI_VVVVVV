@@ -2,8 +2,8 @@
 
 This branch adapts James O'Farrell's [OpenDingux VVVVVV port](https://github.com/jamesofarrell/VVVVVV)
 to Libretro. The frontend owns display, input and audio. A local software
-compatibility layer feeds a 320×240 RGB565 frame to `video_refresh` and 44.1 kHz
-stereo PCM to the Libretro audio callback; no SDL library or device is opened. The
+software surface feeds a 320×240 RGB565 frame to `video_refresh` at 30 FPS and
+44.1 kHz stereo PCM to the Libretro audio callback; no SDL library or device is opened. The
 game's ordinary save files go under the frontend save directory at
 `VVVVVV/saves/`, and custom levels go under `VVVVVV/levels/`. Libretro save
 states are unavailable; `retro_serialize_size()` returns zero.
@@ -38,8 +38,10 @@ saves stay on the card. Use the full TreeFrogUI release deploy for first setup.
 
 Provide your own `data.zip` from a VVVVVV copy or the separately distributed
 Make and Play edition. In TreeFrogUI, put it at `roms/ports/vvvvvv/data.zip` and
-launch **VVVVVV** from **Games → Ports**. The core requires the original graphics, sounds and
-`vvvvvvmusic.vvv` within the archive; it rejects missing or incomplete data.
+launch **VVVVVV** from **Games → Ports**. The archive must contain
+`graphics/{tiles,tiles2,tiles3,entcolours,sprites,flipsprites,font,fontmask,teleporter,levelcomplete,minimap,covered,elephant,gamecomplete,fliplevelcomplete,flipgamecomplete,site,site2,site3,ending,site4}.png`,
+`sounds/jump.wav`, and `vvvvvvmusic.vvv`. The core rejects missing or incomplete
+data. No game data is included in this repository or TreeFrogUI packages.
 No game data is included in this repository or TreeFrogUI packages.
 
 The original VVVVVV source and bundled PhysicsFS, TinyXML and LodePNG retain
